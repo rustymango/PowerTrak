@@ -36,59 +36,33 @@ namespace PowerTrak
 
                 if (dialog.ShowDialog()==DialogResult.OK)
                 {
-                    // grab file
                     capture = new VideoCapture(dialog.FileName);
-                    if (capture != null )
+                    if (capture == null) return;
+
+                    // initializes empty matrix frame
+                    Mat frame = new Mat();
+                    Stopwatch sw = new Stopwatch();
+                    BarTracker barTracker = new BarTracker();
+                    int prevY = 1920;
+
+                    Mat[] imageArray = GetVideoFrames();
+                    foreach (Mat mat in imageArray)
                     {
-                        // initializes empty matrix frame
-                        Mat frame = new Mat();
-                        //// reads grey frame from capture to matrix
-                        //capture.Read(frame);
-                        //// turns frame to array of pixel data (colour, etc.)
-                        //pictureBox1.Image = frame.ToBitmap();
-
-                        Stopwatch sw = new Stopwatch();
-                        //int frameNumber = 0;
-                        //for (; ; )
-                        //{
-                        //    sw.Restart();
-                        //    capture.Read(frame);
-
-                        //    BoundingBoxes(frame);
-                        //    pictureBox1.Image = frame.ToBitmap();
-
-                        //    double dur = sw.ElapsedMilliseconds;
-                        //    Console.WriteLine($"avg time per frame {getFPS.calculateAvgDur(dur)} ms. fps {getFPS.calculateFPS()}. frameNo = {frameNumber++}");
-
-
-                        //    if (CvInvoke.WaitKey(1) == 27)
-                        //        Environment.Exit(0);
-                        //    Console.WriteLine(dur);
-                        //    if (dur < 14)
-                        //    {
-                        //        Thread.Sleep(16 - (int)Math.Floor(dur));
-                        //    }
-                        //}
-
-                        Mat[] imageArray = GetVideoFrames();
-
-                        foreach (Mat mat in imageArray)
+                        using (mat)
                         {
-                            using (mat)
-                            {
-                                sw.Restart();
-                                //TrackBar.BoundingBoxes(mat);
-                                FindBar(mat.ToImage<Bgr, Byte>());
+                            sw.Restart();
+                            Console.WriteLine(prevY);
+                            prevY = FindBar(mat.ToImage<Bgr, Byte>(), barTracker, prevY);
 
-                                double dur = sw.ElapsedMilliseconds;
-                                //pictureBox1.Image = mat.ToBitmap();
-                                pictureBox1.Refresh();
+                            double dur = sw.ElapsedMilliseconds;
+                            //pictureBox1.Image = mat.ToBitmap();
+                            pictureBox1.Refresh();
 
-                                Thread.Sleep(15);
-                                //if (dur.ElapsedMilliseconds < 16) Thread.Sleep(16 - (int)Math.Floor((double)dur.ElapsedMilliseconds));
-                            }
+                            Thread.Sleep(15);
+                            //if (dur.ElapsedMilliseconds < 16) Thread.Sleep(16 - (int)Math.Floor((double)dur.ElapsedMilliseconds));
                         }
                     }
+                    Console.WriteLine($"Tempo Time: {barTracker.tempoTime}, Pause Time: {barTracker.pauseTime}");
                 }
             }
 
@@ -97,7 +71,7 @@ namespace PowerTrak
             }
         }
 
-        internal void FindBar(Image<Bgr, byte> image)
+        internal int FindBar(Image<Bgr, byte> image, BarTracker barTracker, int prevY)
         {
             // Convert the image to HSV
             // "using" keyword disposes object after code block is run
@@ -108,14 +82,24 @@ namespace PowerTrak
 
                 try
                 {
+                    // MOVE TO PREPROCESSING
+                    // ------------------------------------------------------------------------------------------------------------------------
                     Image<Gray, byte> hueMask = channels[0];
-                    // Remove all pixels from the hue channel that are not in the range (currently yellow or red)
-                    CvInvoke.InRange(hueMask, new ScalarArray(new Gray(150).MCvScalar), new ScalarArray(new Gray(200).MCvScalar), hueMask);
+                    // reduces image noise, so smaller movements not detected, size is tolerance of what gets muted
+                    CvInvoke.GaussianBlur(hueMask, hueMask, new Size(3, 3), 1);
+                    // MorphOp.Close fills in holes (dilate-->erode/shrink), Mat.Ones = array of "1" values where location/type is satisfied,
+                    // also reflects upside down?
+                    CvInvoke.MorphologyEx(hueMask, hueMask, MorphOp.Close, Mat.Ones(7, 3, DepthType.Cv8U, 1),
+                        new Point(-1, -1), 1, BorderType.Reflect, new MCvScalar(0));
+
+                    // Remove all pixels from the hue channel that are not in the range (currently green)
+                    CvInvoke.InRange(hueMask, new ScalarArray(new Gray(40).MCvScalar), new ScalarArray(new Gray(60).MCvScalar), hueMask);
+                    // ------------------------------------------------------------------------------------------------------------------------
 
                     VectorOfVectorOfPoint contours = new VectorOfVectorOfPoint();
                     // grabs extreme outer contours by endpoints (compresses horizontal, vertical, and diagonal segments)
                     CvInvoke.FindContours(hueMask, contours, null, RetrType.External, ChainApproxMethod.ChainApproxSimple);
-                    int minArea = 10000;
+                    int minArea = 100000;
 
                     for(int i=0; i<contours.Size; i++)
                     {
@@ -124,15 +108,23 @@ namespace PowerTrak
                         var area = bbox.Width * bbox.Height;
                         var ar = (float)bbox.Width / bbox.Height;
 
-                        // modify condition
+                        // bounding wide rectangle instead?
                         if (area > minArea && ar < 1.0)
                         {
                             // Generates rectangle to the frame
                             CvInvoke.Rectangle(hsv, bbox, new MCvScalar(0, 0, 255), 2);
+
+                            // Check unrack status (ignoring atm)
+                            // start downwards tracking
+                            // method should end tempo timer when difiference between frame Y is 0?
+                            if (barTracker.UnrackStatus()) prevY = barTracker.TrackDownwards(prevY, bbox, 5);
+
+                            // if current Y - pauseY > tolerance and pauseY != 0
+                            // start upwards tracking which ends pause timer
+                            int pauseY = barTracker.pauseY;
+                            if (pauseY != 0 && bbox.Y-pauseY > 5) barTracker.TrackUpwards(pauseY, bbox);
                         }
                     }
-                    //Mat frame = new Mat();
-                    //CvInvoke.CvtColor(hueMask, frame, ColorConversion.Gray2Bgr);
                     pictureBox1.Image = hsv.ToBitmap();
                 }
                 finally
@@ -141,6 +133,7 @@ namespace PowerTrak
                     channels[2].Dispose();
                 }
             }
+            return prevY;
         }
 
         private Mat[] GetVideoFrames()
@@ -170,28 +163,6 @@ namespace PowerTrak
             return imageArray;
         }
 
-        private void Application_Idle(object sender, EventArgs e)
-        {
-            try
-            {
-                // converts capture to matrix
-                Mat frame = capture.QueryFrame();
-                if (frame == null)
-                {
-                    Application.Idle -= Application_Idle;
-                    return;
-                }
-                pictureBox1.Image = frame.ToBitmap();
-                double FPS = getFPS.calculateFPS();
-                Console.WriteLine(FPS);
-            }
-
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message);
-            }
-        }
-
         private void cancel_Click(object sender, System.EventArgs e)
         {
             Application.Exit();
@@ -203,14 +174,3 @@ namespace PowerTrak
         }
     }
 }
-
-//capture.ImageGrabbed += Application_Idle;
-//capture.Start();
-
-//myTimer.Interval = 1000 / 30;
-//myTimer.Tick -= new EventHandler(Application_Idle);
-//myTimer.Tick += new EventHandler(Application_Idle);
-//myTimer.Start();
-
-//int frameNumber = 0;
-//Stopwatch durSW = new Stopwatch();
