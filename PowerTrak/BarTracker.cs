@@ -30,25 +30,29 @@ namespace PowerTrak
         {
             if(!tempoSW.IsRunning) tempoSW.Restart();
 
-            if (bbox.Y - prevY < tolerance) 
+            if (bbox.Y - prevY == 0) 
             {
                 pauseY = bbox.Y;
-                tempoTime = tempoSW.ElapsedMilliseconds;
-
-                tempoSW.Stop();
-                if (!pauseSW.IsRunning) pauseSW.Restart();
-                Console.WriteLine("TempoSW stopped.");
+                if (pauseSW.IsRunning) pauseTime += pauseSW.ElapsedMilliseconds;
+                pauseSW.Restart();
             }
+            pauseTime = 0;
 
             return bbox.Y;
         }
 
         // incorporate velocity tracking later
-        internal int TrackUpwards(int pauseY, Rectangle bbox)
+        internal void TrackUpwards(int pauseY, Rectangle bbox)
         {
-            pauseTime = pauseSW.ElapsedMilliseconds;
-            pauseSW.Stop();
-            return 0;
+            if (tempoSW.IsRunning && pauseSW.IsRunning)
+            {
+                tempoTime = tempoSW.ElapsedMilliseconds; tempoSW.Stop();
+                pauseTime = pauseSW.ElapsedMilliseconds; pauseSW.Stop();
+
+                tempoTime = tempoTime - pauseTime;
+                Console.WriteLine("TempoSW stopped.");
+            }
+            return;
         }
     }
 }

@@ -43,7 +43,7 @@ namespace PowerTrak
                     Mat frame = new Mat();
                     Stopwatch sw = new Stopwatch();
                     BarTracker barTracker = new BarTracker();
-                    int prevY = 1920;
+                    int prevY = 0;
 
                     Mat[] imageArray = GetVideoFrames();
                     foreach (Mat mat in imageArray)
@@ -55,13 +55,13 @@ namespace PowerTrak
                             prevY = FindBar(mat.ToImage<Bgr, Byte>(), barTracker, prevY);
 
                             double dur = sw.ElapsedMilliseconds;
-                            //pictureBox1.Image = mat.ToBitmap();
                             pictureBox1.Refresh();
 
                             Thread.Sleep(15);
                             //if (dur.ElapsedMilliseconds < 16) Thread.Sleep(16 - (int)Math.Floor((double)dur.ElapsedMilliseconds));
                         }
                     }
+                    Console.WriteLine(barTracker.pauseY);
                     Console.WriteLine($"Tempo Time: {barTracker.tempoTime}, Pause Time: {barTracker.pauseTime}");
                 }
             }
@@ -117,12 +117,13 @@ namespace PowerTrak
                             // Check unrack status (ignoring atm)
                             // start downwards tracking
                             // method should end tempo timer when difiference between frame Y is 0?
-                            if (barTracker.UnrackStatus()) prevY = barTracker.TrackDownwards(prevY, bbox, 5);
+                            Console.WriteLine($"Current Y: {bbox.Y}, Prev Y: {prevY}, Pause Y: {barTracker.pauseY}");
+                            if (barTracker.UnrackStatus() && bbox.Y >= prevY) prevY = barTracker.TrackDownwards(prevY, bbox, 5);
 
                             // if current Y - pauseY > tolerance and pauseY != 0
                             // start upwards tracking which ends pause timer
                             int pauseY = barTracker.pauseY;
-                            if (pauseY != 0 && bbox.Y-pauseY > 5) barTracker.TrackUpwards(pauseY, bbox);
+                            if (pauseY != 0 && pauseY - bbox.Y > 5) barTracker.TrackUpwards(pauseY, bbox);
                         }
                     }
                     pictureBox1.Image = hsv.ToBitmap();
