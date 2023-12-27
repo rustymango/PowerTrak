@@ -10,6 +10,7 @@ using Emgu.CV.Structure;
 using System.Text.RegularExpressions;
 using System.Diagnostics;
 using System.Collections.Generic;
+using Emgu.CV.Reg;
 
 namespace PowerTrak
 {
@@ -43,21 +44,26 @@ namespace PowerTrak
                     Mat frame = new Mat();
                     Stopwatch sw = new Stopwatch();
                     BarTracker barTracker = new BarTracker();
-                    int prevY = 0;
 
-                    Mat[] imageArray = GetVideoFrames();
-                    foreach (Mat mat in imageArray)
+                    int prevY = 0;
+                    int frameCount = (int)capture.Get(CapProp.FrameCount);
+                    Image<Gray, byte>[] hueMasks = new Image<Gray, byte>[frameCount];
+
+                    Mat[] imageArray = GetVideoFrames(hueMasks, frameCount);
+                    Console.WriteLine(hueMasks.Length);
+                    for (int i = 0; i < imageArray.Length; i++)
                     {
+                        Mat mat = imageArray[i];
                         using (mat)
                         {
                             sw.Restart();
-                            Console.WriteLine(prevY);
-                            prevY = FindBar(mat.ToImage<Bgr, Byte>(), barTracker, prevY);
+                            prevY = FindBar(hueMasks[i], mat.ToImage<Bgr, byte>(), barTracker, prevY);
 
                             double dur = sw.ElapsedMilliseconds;
                             pictureBox1.Refresh();
 
-                            Thread.Sleep(15);
+                            Console.WriteLine(sw.ElapsedMilliseconds);
+                            //Thread.Sleep(5);
                             //if (dur.ElapsedMilliseconds < 16) Thread.Sleep(16 - (int)Math.Floor((double)dur.ElapsedMilliseconds));
                         }
                     }
@@ -71,81 +77,56 @@ namespace PowerTrak
             }
         }
 
-        internal int FindBar(Image<Bgr, byte> image, BarTracker barTracker, int prevY)
+        internal int FindBar(Image<Gray, byte> hueMask, Image<Bgr, byte> hsv, BarTracker barTracker, int prevY)
         {
             // Convert the image to HSV
             // "using" keyword disposes object after code block is run
-            using (Image<Hsv, byte> hsv = image.Convert<Hsv, byte>())
+            using (hueMask)
             {
-                // Obtain the 3 channels (hue, saturation and value) that compose the HSV image
-                Image<Gray, byte>[] channels = hsv.Split();
+                VectorOfVectorOfPoint contours = new VectorOfVectorOfPoint();
+                // grabs extreme outer contours by endpoints (compresses horizontal, vertical, and diagonal segments)
+                CvInvoke.FindContours(hueMask, contours, null, RetrType.External, ChainApproxMethod.ChainApproxSimple);
+                int minArea = 100000;
 
-                try
+                for (int i = 0; i < contours.Size; i++)
                 {
-                    // MOVE TO PREPROCESSING
-                    // ------------------------------------------------------------------------------------------------------------------------
-                    Image<Gray, byte> hueMask = channels[0];
-                    // reduces image noise, so smaller movements not detected, size is tolerance of what gets muted
-                    CvInvoke.GaussianBlur(hueMask, hueMask, new Size(3, 3), 1);
-                    // MorphOp.Close fills in holes (dilate-->erode/shrink), Mat.Ones = array of "1" values where location/type is satisfied,
-                    // also reflects upside down?
-                    CvInvoke.MorphologyEx(hueMask, hueMask, MorphOp.Close, Mat.Ones(7, 3, DepthType.Cv8U, 1),
-                        new Point(-1, -1), 1, BorderType.Reflect, new MCvScalar(0));
+                    // returns rectangle for set of points
+                    var bbox = CvInvoke.BoundingRectangle(contours[i]);
+                    var area = bbox.Width * bbox.Height;
+                    var ar = (float)bbox.Width / bbox.Height;
 
-                    // Remove all pixels from the hue channel that are not in the range (currently green)
-                    CvInvoke.InRange(hueMask, new ScalarArray(new Gray(40).MCvScalar), new ScalarArray(new Gray(60).MCvScalar), hueMask);
-                    // ------------------------------------------------------------------------------------------------------------------------
-
-                    VectorOfVectorOfPoint contours = new VectorOfVectorOfPoint();
-                    // grabs extreme outer contours by endpoints (compresses horizontal, vertical, and diagonal segments)
-                    CvInvoke.FindContours(hueMask, contours, null, RetrType.External, ChainApproxMethod.ChainApproxSimple);
-                    int minArea = 100000;
-
-                    for(int i=0; i<contours.Size; i++)
+                    // bounding wide rectangle instead?
+                    if (area > minArea && ar < 1.0)
                     {
-                        // returns rectangle for set of points
-                        var bbox = CvInvoke.BoundingRectangle(contours[i]);
-                        var area = bbox.Width * bbox.Height;
-                        var ar = (float)bbox.Width / bbox.Height;
+                        // Generates rectangle to the frame
+                        CvInvoke.Rectangle(hsv, bbox, new MCvScalar(0, 0, 255), 2);
 
-                        // bounding wide rectangle instead?
-                        if (area > minArea && ar < 1.0)
-                        {
-                            // Generates rectangle to the frame
-                            CvInvoke.Rectangle(hsv, bbox, new MCvScalar(0, 0, 255), 2);
+                        // Check unrack status (ignoring atm)
+                        // start downwards tracking
+                        // method should end tempo timer when difiference between frame Y is 0?
+                        Console.WriteLine($"Current Y: {bbox.Y}, Prev Y: {prevY}, Pause Y: {barTracker.pauseY}");
+                        if (barTracker.UnrackStatus() && bbox.Y >= prevY) prevY = barTracker.TrackDownwards(prevY, bbox, 5);
 
-                            // Check unrack status (ignoring atm)
-                            // start downwards tracking
-                            // method should end tempo timer when difiference between frame Y is 0?
-                            Console.WriteLine($"Current Y: {bbox.Y}, Prev Y: {prevY}, Pause Y: {barTracker.pauseY}");
-                            if (barTracker.UnrackStatus() && bbox.Y >= prevY) prevY = barTracker.TrackDownwards(prevY, bbox, 5);
-
-                            // if current Y - pauseY > tolerance and pauseY != 0
-                            // start upwards tracking which ends pause timer
-                            int pauseY = barTracker.pauseY;
-                            if (pauseY != 0 && pauseY - bbox.Y > 5) barTracker.TrackUpwards(pauseY, bbox);
-                        }
+                        // if current Y - pauseY > tolerance and pauseY != 0
+                        // start upwards tracking which ends pause timer
+                        int pauseY = barTracker.pauseY;
+                        if (pauseY != 0 && pauseY - bbox.Y > 5) barTracker.TrackUpwards(pauseY, bbox);
                     }
-                    pictureBox1.Image = hsv.ToBitmap();
                 }
-                finally
-                {
-                    channels[1].Dispose();
-                    channels[2].Dispose();
-                }
+                pictureBox1.Image = hsv.ToBitmap();
             }
             return prevY;
         }
 
-        private Mat[] GetVideoFrames()
+        private Mat[] GetVideoFrames(Image<Gray, byte>[] hueMasks, int frameCount)
         {
-            int frames = (int)capture.Get(CapProp.FrameCount);
-            Mat[] imageArray = new Mat[frames];
+            // switch to Image since preprocessing returns hsv frames
+            Mat[] imageArray = new Mat[frameCount];
             Mat frame = new Mat();
             int frameNumber = 0;
             Stopwatch durSW = new Stopwatch();
 
-            for (int i = 0; i < frames; i++)
+            for (int i = 0; i < frameCount; i++)
             {
                 durSW.Restart();
                 if (frame == null)
@@ -160,8 +141,39 @@ namespace PowerTrak
                 avgFrameDuration = durSW.ElapsedMilliseconds;
                 Console.WriteLine($"avg time per frame {getFPS.calculateAvgDur(avgFrameDuration)} ms. fps {realFPS}. frameNo = {frameNumber++}");
                 if (durSW.ElapsedMilliseconds < 16) Thread.Sleep(16 - (int)Math.Floor((double)durSW.ElapsedMilliseconds));
+
+                SmoothFrames(frame.Clone(), hueMasks, i);
             } 
             return imageArray;
+        }
+
+        private void SmoothFrames(Mat frame, Image<Gray, byte>[] hueMasks, int i)
+        {
+            Image<Hsv, byte> hsv = frame.ToImage<Bgr, byte>().Convert<Hsv, byte>();
+            // Obtain the 3 channels (hue, saturation and value) that compose the HSV image
+            Image<Gray, byte>[] hsvChannels = hsv.Split();
+
+            try
+            {
+                Image<Gray, byte> hueMask = hsvChannels[0];
+
+                // reduces image noise, so smaller movements not detected, size is tolerance of what gets muted
+                CvInvoke.GaussianBlur(hueMask, hueMask, new Size(3, 3), 1);
+                // MorphOp.Close fills in holes (dilate-->erode/shrink), Mat.Ones = array of "1" values where location/type is satisfied,
+                // also reflects upside down?
+                CvInvoke.MorphologyEx(hueMask, hueMask, MorphOp.Close, Mat.Ones(7, 3, DepthType.Cv8U, 1),
+                    new Point(-1, -1), 1, BorderType.Reflect, new MCvScalar(0));
+
+                // Remove all pixels from the hue channel that are not in the range (currently green)
+                CvInvoke.InRange(hueMask, new ScalarArray(new Gray(40).MCvScalar), new ScalarArray(new Gray(60).MCvScalar), hueMask);
+
+                hueMasks[i] = hueMask;
+            }
+            finally
+            {
+                hsvChannels[1].Dispose();
+                hsvChannels[2].Dispose();
+            }
         }
 
         private void cancel_Click(object sender, System.EventArgs e)
