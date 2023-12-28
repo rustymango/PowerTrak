@@ -11,6 +11,7 @@ using System.Text.RegularExpressions;
 using System.Diagnostics;
 using System.Collections.Generic;
 using Emgu.CV.Reg;
+using System.Threading.Tasks;
 
 namespace PowerTrak
 {
@@ -63,7 +64,7 @@ namespace PowerTrak
                             pictureBox1.Refresh();
 
                             Console.WriteLine(sw.ElapsedMilliseconds);
-                            //Thread.Sleep(5);
+                            Thread.Sleep(15);
                             //if (dur.ElapsedMilliseconds < 16) Thread.Sleep(16 - (int)Math.Floor((double)dur.ElapsedMilliseconds));
                         }
                     }
@@ -86,7 +87,8 @@ namespace PowerTrak
                 VectorOfVectorOfPoint contours = new VectorOfVectorOfPoint();
                 // grabs extreme outer contours by endpoints (compresses horizontal, vertical, and diagonal segments)
                 CvInvoke.FindContours(hueMask, contours, null, RetrType.External, ChainApproxMethod.ChainApproxSimple);
-                int minArea = 100000;
+                int minArea = 10000;
+                int maxArea = 10000000;
 
                 for (int i = 0; i < contours.Size; i++)
                 {
@@ -96,7 +98,7 @@ namespace PowerTrak
                     var ar = (float)bbox.Width / bbox.Height;
 
                     // bounding wide rectangle instead?
-                    if (area > minArea && ar < 1.0)
+                    if (area > minArea && area < maxArea && ar < 1.0)
                     {
                         // Generates rectangle to the frame
                         CvInvoke.Rectangle(hsv, bbox, new MCvScalar(0, 0, 255), 2);
@@ -113,7 +115,8 @@ namespace PowerTrak
                         if (pauseY != 0 && pauseY - bbox.Y > 5) barTracker.TrackUpwards(pauseY, bbox);
                     }
                 }
-                pictureBox1.Image = hsv.ToBitmap();
+                pictureBox1.Image = hueMask.ToBitmap();
+                //pictureBox1.Image = hsv.ToBitmap();
             }
             return prevY;
         }
@@ -142,12 +145,12 @@ namespace PowerTrak
                 Console.WriteLine($"avg time per frame {getFPS.calculateAvgDur(avgFrameDuration)} ms. fps {realFPS}. frameNo = {frameNumber++}");
                 if (durSW.ElapsedMilliseconds < 16) Thread.Sleep(16 - (int)Math.Floor((double)durSW.ElapsedMilliseconds));
 
-                SmoothFrames(frame.Clone(), hueMasks, i);
+                FilterFrames(frame.Clone(), hueMasks, i);
             } 
             return imageArray;
         }
 
-        private void SmoothFrames(Mat frame, Image<Gray, byte>[] hueMasks, int i)
+        private void FilterFrames(Mat frame, Image<Gray, byte>[] hueMasks, int i)
         {
             Image<Hsv, byte> hsv = frame.ToImage<Bgr, byte>().Convert<Hsv, byte>();
             // Obtain the 3 channels (hue, saturation and value) that compose the HSV image
@@ -155,25 +158,38 @@ namespace PowerTrak
 
             try
             {
+                foreach (Image<Gray, byte> channel in hsvChannels) SmoothFrames(channel, channel);
                 Image<Gray, byte> hueMask = hsvChannels[0];
+                Image<Gray, byte> saturationMask = hsvChannels[1];
+                Image<Gray, byte> valueMask = hsvChannels[2];
+                Image<Gray, byte> combinedMask = new Image<Gray, byte>(hsv.Size);
 
-                // reduces image noise, so smaller movements not detected, size is tolerance of what gets muted
-                CvInvoke.GaussianBlur(hueMask, hueMask, new Size(3, 3), 1);
-                // MorphOp.Close fills in holes (dilate-->erode/shrink), Mat.Ones = array of "1" values where location/type is satisfied,
-                // also reflects upside down?
-                CvInvoke.MorphologyEx(hueMask, hueMask, MorphOp.Close, Mat.Ones(7, 3, DepthType.Cv8U, 1),
-                    new Point(-1, -1), 1, BorderType.Reflect, new MCvScalar(0));
+                CvInvoke.InRange(hueMask, new ScalarArray(new Gray(40).MCvScalar), new ScalarArray(new Gray(80).MCvScalar), hueMask);
+                CvInvoke.InRange(saturationMask, new ScalarArray(new Gray(50).MCvScalar), new ScalarArray(new Gray(255).MCvScalar), saturationMask);
+                CvInvoke.InRange(valueMask, new ScalarArray(new Gray(50).MCvScalar), new ScalarArray(new Gray(255).MCvScalar), valueMask);
 
-                // Remove all pixels from the hue channel that are not in the range (currently green)
-                CvInvoke.InRange(hueMask, new ScalarArray(new Gray(40).MCvScalar), new ScalarArray(new Gray(60).MCvScalar), hueMask);
+                // Combine hue, saturation, and value masks into a single mask
+                CvInvoke.BitwiseAnd(hueMask, saturationMask, combinedMask);
+                CvInvoke.BitwiseAnd(combinedMask, valueMask, combinedMask);
 
-                hueMasks[i] = hueMask;
+                hueMasks[i] = combinedMask;
             }
             finally
             {
+                hsvChannels[0].Dispose();
                 hsvChannels[1].Dispose();
                 hsvChannels[2].Dispose();
             }
+        }
+
+        private void SmoothFrames(Image<Gray, byte> inputMask, Image<Gray, byte> outputMask)
+        {
+            // reduces image noise, so smaller movements not detected, size is tolerance of what gets muted
+            CvInvoke.GaussianBlur(inputMask, outputMask, new Size(3, 3), 1);
+            // MorphOp.Close fills in holes (dilate-->erode/shrink), Mat.Ones = array of "1" values where location/type is satisfied,
+            // also reflects upside down?
+            CvInvoke.MorphologyEx(inputMask, outputMask, MorphOp.Close, Mat.Ones(7, 3, DepthType.Cv8U, 1),
+                new Point(-1, -1), 1, BorderType.Reflect, new MCvScalar(0));
         }
 
         private void cancel_Click(object sender, System.EventArgs e)
