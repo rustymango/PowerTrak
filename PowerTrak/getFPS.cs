@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Diagnostics;
-using Emgu.CV;
-using Emgu.CV.CvEnum;
-using Emgu.CV.Structure;
 
 namespace PowerTrak
 {

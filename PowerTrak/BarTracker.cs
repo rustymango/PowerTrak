@@ -1,15 +1,6 @@
 ﻿using System;
-using System.Windows.Forms;
 using System.Drawing;
-using System.Threading;
-
-using Emgu.CV;
-using Emgu.CV.Util;
-using Emgu.CV.CvEnum;
-using Emgu.CV.Structure;
-using System.Text.RegularExpressions;
 using System.Diagnostics;
-using System.Collections.Generic;
 
 namespace PowerTrak
 {
