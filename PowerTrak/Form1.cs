@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Windows.Forms;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Diagnostics;
 
 using Emgu.CV;
@@ -26,7 +27,7 @@ namespace PowerTrak
 
         }
 
-        private void getVideo_Click(object sender, System.EventArgs e) {
+        private async void getVideo_Click(object sender, System.EventArgs e) {
             try {
                 OpenFileDialog dialog = new OpenFileDialog();
                 dialog.Filter = "Video Files (*.mp4;)|*.mp4";
@@ -46,25 +47,32 @@ namespace PowerTrak
                     Image<Gray, byte>[] hueMasks = new Image<Gray, byte>[frameCount];
 
                     Mat[] imageArray = GetVideoFrames(hueMasks, frameCount);
-                    Console.WriteLine(hueMasks.Length);
+                    Stopwatch sw2 = new Stopwatch();
                     for (int i = 0; i < imageArray.Length; i++)
                     {
-                        Mat mat = imageArray[i];
-                        using (mat)
+                        Image<Bgr, byte> image = imageArray[i].ToImage<Bgr, byte>();
+                        using (image)
                         {
-                            sw.Restart();
-                            prevY = FindBar(hueMasks[i], mat.ToImage<Bgr, byte>(), barTracker, prevY);
+                            prevY = FindBar(hueMasks[i], image, barTracker, prevY);
 
-                            double dur = sw.ElapsedMilliseconds;
+                            //pictureBox1.Image = image.ToBitmap();
                             pictureBox1.Refresh();
 
-                            Console.WriteLine(sw.ElapsedMilliseconds);
-                            Thread.Sleep(15);
-                            //if (dur.ElapsedMilliseconds < 16) Thread.Sleep(16 - (int)Math.Floor((double)dur.ElapsedMilliseconds));
+                            //Console.WriteLine(sw.ElapsedMilliseconds);
+                            if (sw.ElapsedMilliseconds < 22) await Task.Delay(22 - (int)Math.Floor((double)sw.ElapsedMilliseconds));
+                            Console.WriteLine($"frame duration: {sw2.ElapsedMilliseconds}");
+                            sw2.Restart();
+                            sw.Restart();
                         }
                     }
-                    Console.WriteLine(barTracker.pauseY);
-                    Console.WriteLine($"Tempo Time: {barTracker.tempoTime}, Pause Time: {barTracker.pauseTime}");
+                    double tempoTime = barTracker.tempoTime;
+                    double pauseY = barTracker.pauseY;
+                    double pauseTime = barTracker.pauseTime;
+                    Console.WriteLine(pauseY);
+                    Console.WriteLine($"Tempo Time: {tempoTime}, Pause Time: {pauseTime}");
+
+                    TempoTimer.Text = $"Tempo Time (ms): {tempoTime.ToString()}";
+                    PauseTimer.Text = $"Pause Time (ms): {pauseTime.ToString()}";
                 }
             }
 
@@ -82,7 +90,7 @@ namespace PowerTrak
                 VectorOfVectorOfPoint contours = new VectorOfVectorOfPoint();
                 // grabs extreme outer contours by endpoints (compresses horizontal, vertical, and diagonal segments)
                 CvInvoke.FindContours(hueMask, contours, null, RetrType.External, ChainApproxMethod.ChainApproxSimple);
-                int minArea = 10000;
+                int minArea = 1000;
                 int maxArea = 10000000;
 
                 for (int i = 0; i < contours.Size; i++)
@@ -99,19 +107,14 @@ namespace PowerTrak
                         CvInvoke.Rectangle(hsv, bbox, new MCvScalar(0, 0, 255), 2);
 
                         // Check unrack status (ignoring atm)
-                        // start downwards tracking
-                        // method should end tempo timer when difiference between frame Y is 0?
-                        Console.WriteLine($"Current Y: {bbox.Y}, Prev Y: {prevY}, Pause Y: {barTracker.pauseY}");
+                        //Console.WriteLine($"Current Y: {bbox.Y}, Prev Y: {prevY}, Pause Y: {barTracker.pauseY}");
                         if (barTracker.UnrackStatus() && bbox.Y >= prevY) prevY = barTracker.TrackDownwards(prevY, bbox, 5);
 
-                        // if current Y - pauseY > tolerance and pauseY != 0
-                        // start upwards tracking which ends pause timer
                         int pauseY = barTracker.pauseY;
                         if (pauseY != 0 && pauseY - bbox.Y > 5) barTracker.TrackUpwards(pauseY, bbox);
                     }
                 }
-                //pictureBox1.Image = hueMask.ToBitmap();
-                pictureBox1.Image = hsv.ToBitmap();
+                pictureBox1.Image = hueMask.ToBitmap();
             }
             return prevY;
         }
@@ -140,7 +143,7 @@ namespace PowerTrak
                 Console.WriteLine($"avg time per frame {getFPS.calculateAvgDur(avgFrameDuration)} ms. fps {realFPS}. frameNo = {frameNumber++}");
                 if (durSW.ElapsedMilliseconds < 16) Thread.Sleep(16 - (int)Math.Floor((double)durSW.ElapsedMilliseconds));
 
-                Preprocessing.FilterFrames(frame.Clone(), hueMasks, i, "green");
+                Preprocessing.FilterFrames(frame.Clone(), hueMasks, i, "black");
             } 
             return imageArray;
         }
@@ -151,6 +154,16 @@ namespace PowerTrak
         }
 
         internal void pictureBox1_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void TempoTimer_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void PauseTimer_Click(object sender, EventArgs e)
         {
 
         }

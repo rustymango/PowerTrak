@@ -31,6 +31,8 @@
             this.pictureBox1 = new System.Windows.Forms.PictureBox();
             this.getVideo = new System.Windows.Forms.Button();
             this.cancel = new System.Windows.Forms.Button();
+            this.TempoTimer = new System.Windows.Forms.Label();
+            this.PauseTimer = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.SuspendLayout();
             // 
@@ -64,11 +66,33 @@
             this.cancel.UseVisualStyleBackColor = true;
             this.cancel.Click += new System.EventHandler(this.cancel_Click);
             // 
+            // TempoTimer
+            // 
+            this.TempoTimer.AutoSize = true;
+            this.TempoTimer.Location = new System.Drawing.Point(676, 32);
+            this.TempoTimer.Name = "TempoTimer";
+            this.TempoTimer.Size = new System.Drawing.Size(66, 13);
+            this.TempoTimer.TabIndex = 3;
+            this.TempoTimer.Text = "TempoTimer";
+            this.TempoTimer.Click += new System.EventHandler(this.TempoTimer_Click);
+            // 
+            // PauseTimer
+            // 
+            this.PauseTimer.AutoSize = true;
+            this.PauseTimer.Location = new System.Drawing.Point(676, 61);
+            this.PauseTimer.Name = "PauseTimer";
+            this.PauseTimer.Size = new System.Drawing.Size(63, 13);
+            this.PauseTimer.TabIndex = 4;
+            this.PauseTimer.Text = "PauseTimer";
+            this.PauseTimer.Click += new System.EventHandler(this.PauseTimer_Click);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(800, 450);
+            this.Controls.Add(this.PauseTimer);
+            this.Controls.Add(this.TempoTimer);
             this.Controls.Add(this.cancel);
             this.Controls.Add(this.getVideo);
             this.Controls.Add(this.pictureBox1);
@@ -77,6 +101,7 @@
             this.Load += new System.EventHandler(this.Form1_Load);
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).EndInit();
             this.ResumeLayout(false);
+            this.PerformLayout();
 
         }
 
@@ -85,6 +110,8 @@
         private System.Windows.Forms.PictureBox pictureBox1;
         private System.Windows.Forms.Button getVideo;
         private System.Windows.Forms.Button cancel;
+        private System.Windows.Forms.Label TempoTimer;
+        private System.Windows.Forms.Label PauseTimer;
     }
 }
 

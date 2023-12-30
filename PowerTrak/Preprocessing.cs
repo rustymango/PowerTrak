@@ -58,6 +58,7 @@ namespace PowerTrak
                 case "yellow": grayValues = new int[] {15, 30, 70, 255, 70, 255}; return grayValues;
                 case "red": grayValues = new int[] {140, 200, 50, 255, 50, 255}; return grayValues;
                 case "green": grayValues = new int[] {40, 80, 50, 255, 50, 255}; return grayValues;
+                case "black": grayValues = new int[] {100,120,0,20,0,180}; return grayValues;
             }
             return new int[6];
         }
