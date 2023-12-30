@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Drawing;
 using System.Windows.Forms;
 using System.Threading;
 using System.Threading.Tasks;
@@ -24,7 +25,7 @@ namespace PowerTrak
 
         private void Form1_Load(object sender, System.EventArgs e)
         {
-
+            Logo.Image = Image.FromFile(@"C:\Users\vinny\source\repos\PowerTrak\PowerTrak\PowerTrak.JPG");
         }
 
         private async void getVideo_Click(object sender, System.EventArgs e) {
@@ -55,12 +56,11 @@ namespace PowerTrak
                         {
                             prevY = FindBar(hueMasks[i], image, barTracker, prevY);
 
-                            //pictureBox1.Image = image.ToBitmap();
+                            pictureBox1.Image = image.ToBitmap();
                             pictureBox1.Refresh();
 
-                            //Console.WriteLine(sw.ElapsedMilliseconds);
                             if (sw.ElapsedMilliseconds < 22) await Task.Delay(22 - (int)Math.Floor((double)sw.ElapsedMilliseconds));
-                            Console.WriteLine($"frame duration: {sw2.ElapsedMilliseconds}");
+                            //Console.WriteLine($"frame duration: {sw2.ElapsedMilliseconds}");
                             sw2.Restart();
                             sw.Restart();
                         }
@@ -90,7 +90,7 @@ namespace PowerTrak
                 VectorOfVectorOfPoint contours = new VectorOfVectorOfPoint();
                 // grabs extreme outer contours by endpoints (compresses horizontal, vertical, and diagonal segments)
                 CvInvoke.FindContours(hueMask, contours, null, RetrType.External, ChainApproxMethod.ChainApproxSimple);
-                int minArea = 1000;
+                int minArea = 10000;
                 int maxArea = 10000000;
 
                 for (int i = 0; i < contours.Size; i++)
@@ -107,14 +107,14 @@ namespace PowerTrak
                         CvInvoke.Rectangle(hsv, bbox, new MCvScalar(0, 0, 255), 2);
 
                         // Check unrack status (ignoring atm)
-                        //Console.WriteLine($"Current Y: {bbox.Y}, Prev Y: {prevY}, Pause Y: {barTracker.pauseY}");
+                        Console.WriteLine($"Current Y: {bbox.Y}, Prev Y: {prevY}, Pause Y: {barTracker.pauseY}");
                         if (barTracker.UnrackStatus() && bbox.Y >= prevY) prevY = barTracker.TrackDownwards(prevY, bbox, 5);
 
                         int pauseY = barTracker.pauseY;
                         if (pauseY != 0 && pauseY - bbox.Y > 5) barTracker.TrackUpwards(pauseY, bbox);
                     }
                 }
-                pictureBox1.Image = hueMask.ToBitmap();
+                //pictureBox1.Image = hueMask.ToBitmap();
             }
             return prevY;
         }
@@ -143,7 +143,7 @@ namespace PowerTrak
                 Console.WriteLine($"avg time per frame {getFPS.calculateAvgDur(avgFrameDuration)} ms. fps {realFPS}. frameNo = {frameNumber++}");
                 if (durSW.ElapsedMilliseconds < 16) Thread.Sleep(16 - (int)Math.Floor((double)durSW.ElapsedMilliseconds));
 
-                Preprocessing.FilterFrames(frame.Clone(), hueMasks, i, "black");
+                Preprocessing.FilterFrames(frame.Clone(), hueMasks, i, "red");
             } 
             return imageArray;
         }
@@ -164,6 +164,11 @@ namespace PowerTrak
         }
 
         private void PauseTimer_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void Logo_Click(object sender, EventArgs e)
         {
 
         }
