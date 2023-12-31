@@ -15,12 +15,14 @@ namespace PowerTrak
     public partial class Form1 : Form
     {
         VideoCapture capture = null;
+        string plateColour;
         double realFPS;
         double avgFrameDuration;
 
         public Form1()
         {
             InitializeComponent();
+            InitializerComboBox();
         }
 
         private void Form1_Load(object sender, System.EventArgs e)
@@ -126,7 +128,10 @@ namespace PowerTrak
             Mat frame = new Mat();
             int frameNumber = 0;
             Stopwatch durSW = new Stopwatch();
+            durSW.Restart();
 
+            // incorporate error handling FIX
+            if (plateColour == "null") plateColour = "red";
             for (int i = 0; i < frameCount; i++)
             {
                 //durSW.Restart();
@@ -140,11 +145,13 @@ namespace PowerTrak
 
                 realFPS = getFPS.calculateFPS();
                 avgFrameDuration = durSW.ElapsedMilliseconds;
-                Console.WriteLine($"avg time per frame {getFPS.calculateAvgDur(avgFrameDuration)} ms. fps {realFPS}. frameNo = {frameNumber++}");
+                //Console.WriteLine($"avg time per frame {getFPS.calculateAvgDur(avgFrameDuration)} ms. fps {realFPS}. frameNo = {frameNumber++}");
                 //if (durSW.ElapsedMilliseconds < 16) Thread.Sleep(16 - (int)Math.Floor((double)durSW.ElapsedMilliseconds));
 
-                Preprocessing.FilterFrames(frame.Clone(), hueMasks, i, "yellow");
-            } 
+                Preprocessing.FilterFrames(frame.Clone(), hueMasks, i, plateColour);
+            }
+            durSW.Stop();
+            Console.WriteLine($"Preprocessing Time: {durSW.ElapsedMilliseconds}");
             return imageArray;
         }
 
@@ -153,24 +160,31 @@ namespace PowerTrak
             Application.Exit();
         }
 
-        internal void pictureBox1_Click(object sender, EventArgs e)
+        private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
         {
-
+            ComboBox comboBox = (ComboBox)sender;
+            plateColour = comboBox.SelectedItem.ToString();
         }
 
-        private void TempoTimer_Click(object sender, EventArgs e)
+        private void InitializerComboBox()
         {
+            ComboBox comboBox = new ComboBox();
 
+            comboBox1.Items.Add("red");
+            comboBox1.Items.Add("blue");
+            comboBox1.Items.Add("yellow");
+            comboBox1.Items.Add("green");
+            comboBox1.Items.Add("black");
+
+            comboBox1.SelectedIndexChanged += comboBox1_SelectedIndexChanged;
         }
 
-        private void PauseTimer_Click(object sender, EventArgs e)
-        {
+        internal void pictureBox1_Click(object sender, EventArgs e){}
 
-        }
+        private void TempoTimer_Click(object sender, EventArgs e){}
 
-        private void Logo_Click(object sender, EventArgs e)
-        {
+        private void PauseTimer_Click(object sender, EventArgs e){}
 
-        }
+        private void Logo_Click(object sender, EventArgs e){}
     }
 }

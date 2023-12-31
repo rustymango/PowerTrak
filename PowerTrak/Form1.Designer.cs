@@ -39,6 +39,8 @@ namespace PowerTrak
             this.PauseTimer = new System.Windows.Forms.Label();
             this.imageList1 = new System.Windows.Forms.ImageList(this.components);
             this.Logo = new System.Windows.Forms.PictureBox();
+            this.comboBox1 = new System.Windows.Forms.ComboBox();
+            this.label1 = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.Logo)).BeginInit();
             this.SuspendLayout();
@@ -73,34 +75,34 @@ namespace PowerTrak
             this.cancel.BackColor = System.Drawing.Color.White;
             this.cancel.BackgroundImageLayout = System.Windows.Forms.ImageLayout.None;
             this.cancel.FlatStyle = System.Windows.Forms.FlatStyle.Popup;
-            this.cancel.Image = Image.FromFile(@"C:\Users\vinny\source\repos\PowerTrak\PowerTrak\images\xicon.jpg");
-            this.cancel.TextImageRelation = System.Windows.Forms.TextImageRelation.ImageAboveText;
+            this.cancel.Image = ((System.Drawing.Image)(resources.GetObject("cancel.Image")));
             this.cancel.Location = new System.Drawing.Point(602, 327);
             this.cancel.Name = "cancel";
             this.cancel.Size = new System.Drawing.Size(108, 53);
             this.cancel.TabIndex = 2;
             this.cancel.Text = "Cancel";
+            this.cancel.TextImageRelation = System.Windows.Forms.TextImageRelation.ImageAboveText;
             this.cancel.UseVisualStyleBackColor = false;
             this.cancel.Click += new System.EventHandler(this.cancel_Click);
             // 
             // TempoTimer
             // 
             this.TempoTimer.AutoSize = true;
-            this.TempoTimer.Location = new System.Drawing.Point(492, 141);
+            this.TempoTimer.Location = new System.Drawing.Point(492, 185);
             this.TempoTimer.Name = "TempoTimer";
-            this.TempoTimer.Size = new System.Drawing.Size(66, 13);
+            this.TempoTimer.Size = new System.Drawing.Size(69, 13);
             this.TempoTimer.TabIndex = 3;
-            this.TempoTimer.Text = "TempoTimer";
+            this.TempoTimer.Text = "Tempo Timer";
             this.TempoTimer.Click += new System.EventHandler(this.TempoTimer_Click);
             // 
             // PauseTimer
             // 
             this.PauseTimer.AutoSize = true;
-            this.PauseTimer.Location = new System.Drawing.Point(492, 171);
+            this.PauseTimer.Location = new System.Drawing.Point(492, 215);
             this.PauseTimer.Name = "PauseTimer";
-            this.PauseTimer.Size = new System.Drawing.Size(63, 13);
+            this.PauseTimer.Size = new System.Drawing.Size(66, 13);
             this.PauseTimer.TabIndex = 4;
-            this.PauseTimer.Text = "PauseTimer";
+            this.PauseTimer.Text = "Pause Timer";
             this.PauseTimer.Click += new System.EventHandler(this.PauseTimer_Click);
             // 
             // imageList1
@@ -118,11 +120,31 @@ namespace PowerTrak
             this.Logo.TabStop = false;
             this.Logo.Click += new System.EventHandler(this.Logo_Click);
             // 
+            // comboBox1
+            // 
+            this.comboBox1.FormattingEnabled = true;
+            this.comboBox1.Location = new System.Drawing.Point(492, 150);
+            this.comboBox1.Name = "comboBox1";
+            this.comboBox1.Size = new System.Drawing.Size(121, 21);
+            this.comboBox1.TabIndex = 6;
+            this.comboBox1.SelectedIndexChanged += new System.EventHandler(this.comboBox1_SelectedIndexChanged);
+            // 
+            // label1
+            // 
+            this.label1.AutoSize = true;
+            this.label1.Location = new System.Drawing.Point(489, 134);
+            this.label1.Name = "label1";
+            this.label1.Size = new System.Drawing.Size(262, 13);
+            this.label1.TabIndex = 7;
+            this.label1.Text = "Please select the colour of the outermost weight plate:";
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(804, 392);
+            this.Controls.Add(this.label1);
+            this.Controls.Add(this.comboBox1);
             this.Controls.Add(this.Logo);
             this.Controls.Add(this.PauseTimer);
             this.Controls.Add(this.TempoTimer);
@@ -148,6 +170,8 @@ namespace PowerTrak
         private System.Windows.Forms.Label PauseTimer;
         private System.Windows.Forms.ImageList imageList1;
         private System.Windows.Forms.PictureBox Logo;
+        private System.Windows.Forms.ComboBox comboBox1;
+        private System.Windows.Forms.Label label1;
     }
 }
 
