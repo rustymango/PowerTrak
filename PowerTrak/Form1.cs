@@ -25,7 +25,7 @@ namespace PowerTrak
 
         private void Form1_Load(object sender, System.EventArgs e)
         {
-            Logo.Image = Image.FromFile(@"C:\Users\vinny\source\repos\PowerTrak\PowerTrak\PowerTrak.JPG");
+            Logo.Image = Image.FromFile(@"C:\Users\vinny\source\repos\PowerTrak\PowerTrak\images\PowerTrak.JPG");
         }
 
         private async void getVideo_Click(object sender, System.EventArgs e) {
@@ -129,7 +129,7 @@ namespace PowerTrak
 
             for (int i = 0; i < frameCount; i++)
             {
-                durSW.Restart();
+                //durSW.Restart();
                 if (frame == null)
                 {
                     return imageArray;
@@ -141,9 +141,9 @@ namespace PowerTrak
                 realFPS = getFPS.calculateFPS();
                 avgFrameDuration = durSW.ElapsedMilliseconds;
                 Console.WriteLine($"avg time per frame {getFPS.calculateAvgDur(avgFrameDuration)} ms. fps {realFPS}. frameNo = {frameNumber++}");
-                if (durSW.ElapsedMilliseconds < 16) Thread.Sleep(16 - (int)Math.Floor((double)durSW.ElapsedMilliseconds));
+                //if (durSW.ElapsedMilliseconds < 16) Thread.Sleep(16 - (int)Math.Floor((double)durSW.ElapsedMilliseconds));
 
-                Preprocessing.FilterFrames(frame.Clone(), hueMasks, i, "red");
+                Preprocessing.FilterFrames(frame.Clone(), hueMasks, i, "yellow");
             } 
             return imageArray;
         }
