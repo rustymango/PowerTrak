@@ -90,19 +90,19 @@ namespace PowerTrak
             this.TempoTimer.AutoSize = true;
             this.TempoTimer.Location = new System.Drawing.Point(492, 185);
             this.TempoTimer.Name = "TempoTimer";
-            this.TempoTimer.Size = new System.Drawing.Size(69, 13);
+            this.TempoTimer.Size = new System.Drawing.Size(74, 13);
             this.TempoTimer.TabIndex = 3;
-            this.TempoTimer.Text = "Tempo Timer";
+            this.TempoTimer.Text = "Tempo Timers";
             this.TempoTimer.Click += new System.EventHandler(this.TempoTimer_Click);
             // 
             // PauseTimer
             // 
             this.PauseTimer.AutoSize = true;
-            this.PauseTimer.Location = new System.Drawing.Point(492, 215);
+            this.PauseTimer.Location = new System.Drawing.Point(632, 185);
             this.PauseTimer.Name = "PauseTimer";
-            this.PauseTimer.Size = new System.Drawing.Size(66, 13);
+            this.PauseTimer.Size = new System.Drawing.Size(71, 13);
             this.PauseTimer.TabIndex = 4;
-            this.PauseTimer.Text = "Pause Timer";
+            this.PauseTimer.Text = "Pause Timers";
             this.PauseTimer.Click += new System.EventHandler(this.PauseTimer_Click);
             // 
             // imageList1

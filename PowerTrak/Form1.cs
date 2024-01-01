@@ -70,16 +70,18 @@ namespace PowerTrak
                         }
                     }
                     List<double> tempoTimes = barTracker.tempoTimes;
-                    double pauseY = barTracker.pauseY;
                     List<double> pauseTimes = barTracker.pauseTimes;
-
-                    // loop through and format
+                    double pauseY = barTracker.pauseY;
                     Console.WriteLine(pauseY);
-                    foreach (double tempoTime in tempoTimes) Console.WriteLine($"Tempo Time: {tempoTime}");
-                    foreach (double pauseTime in pauseTimes) Console.WriteLine($"Pause Time: {pauseTime}");
 
-                    //TempoTimer.Text = $"Tempo Time (ms): {tempoTime.ToString()}";
-                    //PauseTimer.Text = $"Pause Time (ms): {pauseTime.ToString()}";
+                    string pauseResults = ""; string tempoResults = ""; 
+                    for (int i=0; i < tempoTimes.Count; i++)
+                    {
+                        tempoResults += $"\nRep {i+1}: {tempoTimes[i]}ms\n";
+                        pauseResults += $"\nRep {i+1}: {pauseTimes[i]}ms\n";
+                    }
+                    TempoTimer.Text = $"Tempo Times: {tempoResults}";
+                    PauseTimer.Text = $"Pause Times: {pauseResults}";
                 }
             }
 
