@@ -4,6 +4,7 @@ using System.Windows.Forms;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Diagnostics;
+using System.Collections.Generic;
 
 using Emgu.CV;
 using Emgu.CV.Util;
@@ -16,6 +17,7 @@ namespace PowerTrak
     {
         VideoCapture capture = null;
         string plateColour;
+        int topY;
         double realFPS;
         double avgFrameDuration;
 
@@ -67,14 +69,17 @@ namespace PowerTrak
                             sw.Restart();
                         }
                     }
-                    double tempoTime = barTracker.tempoTime;
+                    List<double> tempoTimes = barTracker.tempoTimes;
                     double pauseY = barTracker.pauseY;
-                    double pauseTime = barTracker.pauseTime;
-                    Console.WriteLine(pauseY);
-                    Console.WriteLine($"Tempo Time: {tempoTime}, Pause Time: {pauseTime}");
+                    List<double> pauseTimes = barTracker.pauseTimes;
 
-                    TempoTimer.Text = $"Tempo Time (ms): {tempoTime.ToString()}";
-                    PauseTimer.Text = $"Pause Time (ms): {pauseTime.ToString()}";
+                    // loop through and format
+                    Console.WriteLine(pauseY);
+                    foreach (double tempoTime in tempoTimes) Console.WriteLine($"Tempo Time: {tempoTime}");
+                    foreach (double pauseTime in pauseTimes) Console.WriteLine($"Pause Time: {pauseTime}");
+
+                    //TempoTimer.Text = $"Tempo Time (ms): {tempoTime.ToString()}";
+                    //PauseTimer.Text = $"Pause Time (ms): {pauseTime.ToString()}";
                 }
             }
 
@@ -107,13 +112,15 @@ namespace PowerTrak
                     {
                         // Generates rectangle to the frame
                         CvInvoke.Rectangle(hsv, bbox, new MCvScalar(0, 0, 255), 2);
+                        if (topY == 0) topY = bbox.Y;
 
                         // Check unrack status (ignoring atm)
+                        if (bbox.Y - topY <= 2) prevY = bbox.Y + 3;
                         Console.WriteLine($"Current Y: {bbox.Y}, Prev Y: {prevY}, Pause Y: {barTracker.pauseY}");
-                        if (barTracker.UnrackStatus() && bbox.Y >= prevY) prevY = barTracker.TrackDownwards(prevY, bbox, 5);
+                        if (barTracker.UnrackStatus() && bbox.Y >= prevY) prevY = barTracker.TrackDownwards(prevY, bbox, topY, 5);
 
                         int pauseY = barTracker.pauseY;
-                        if (pauseY != 0 && pauseY - bbox.Y > 5) barTracker.TrackUpwards(pauseY, bbox);
+                        if (pauseY != 0 && pauseY - bbox.Y > 10) barTracker.TrackUpwards(bbox);
                     }
                 }
                 //pictureBox1.Image = hueMask.ToBitmap();
