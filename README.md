@@ -5,7 +5,7 @@ PowerTrak is an app designed to help powerlifters/weightlifters analyze and impr
 ## Here are some videos that have been analyzed for our first users!
 
 ### Comp Bench 4 Reps - Yellow                     Pause Squat 3 Reps - Green
-![Comp Bench 4 Reps - Yellow]https://github.com/rustymango/PowerTrak/assets/117687423/1929b31c-04c6-4d14-b0f8-26733be2bc2d ![Pause Squat 3 Reps - Green]https://github.com/rustymango/PowerTrak/assets/117687423/082f0c2f-c8a0-4fab-a400-643bd8d8070e
+![Comp Bench 4 Reps - Yellow](https://github.com/rustymango/PowerTrak/assets/117687423/1929b31c-04c6-4d14-b0f8-26733be2bc2d) ![Pause Squat 3 Reps - Green](https://github.com/rustymango/PowerTrak/assets/117687423/082f0c2f-c8a0-4fab-a400-643bd8d8070e)
 
 ### Comp Bench 1 Rep - Blue                        Comp Bench 1 Rep - Yellow
 https://github.com/rustymango/PowerTrak/assets/117687423/cccf15d5-19f6-42a6-ae71-15f02ad99826
