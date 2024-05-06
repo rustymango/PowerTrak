@@ -3,22 +3,33 @@ using System.Drawing;
 using System.Diagnostics;
 using System.Collections.Generic;
 
-namespace PowerTrak
-{
-    internal class BarTracker
-    {
-        public int pauseY = 0;
+namespace PowerTrak {
+    struct Analytics {
+        public int pauseY;
+        public double pauseTime;
+        public List<double> pauseTimes;
+        public double tempoTime;
+        public List<double> tempoTimes;
 
-        double tempoTime;
-        public List<double> tempoTimes = new List<double>();
+        internal Analytics(int pauseY, double pauseTime, List<double> pauseTimes, double tempoTime, List<double> tempoTimes)
+        {
+            this.pauseY = pauseY;
+            this.pauseTime = pauseTime;
+            this.pauseTimes = pauseTimes;
+            this.tempoTime = tempoTime;
+            this.tempoTimes = tempoTimes;
+        }
+    }
+
+    internal class BarTracker {
+        internal Analytics analytics;
         Stopwatch tempoSW = new Stopwatch();
-
-        double pauseTime;
-        public List<double> pauseTimes = new List<double>();
         Stopwatch pauseSW = new Stopwatch();
+        bool goingUp = false;
 
-        int currRep = 1;
-        int nextRep = 1;
+        internal BarTracker() {
+            analytics = new Analytics(0, 0, new List<double>(), 0, new List<double>());
+        }
 
         // WIP
         internal bool UnrackStatus()
@@ -32,39 +43,40 @@ namespace PowerTrak
 
             if (bbox.Y - prevY == 0)
             {
-                currRep = nextRep;
-                pauseY = bbox.Y;
-                if (pauseSW.IsRunning) pauseTime += pauseSW.ElapsedMilliseconds;
-                Console.WriteLine($"Pause Time: {pauseTime}");
+                goingUp = false;
+                analytics.pauseY = bbox.Y;
+                if (pauseSW.IsRunning) analytics.pauseTime += pauseSW.ElapsedMilliseconds;
+                // Console.WriteLine($"Pause Time: {analytics.pauseTime}");
+                
                 pauseSW.Restart();
             }
-            else { pauseTime = 0; Console.WriteLine("Pause timer reset"); }
+            else { analytics.pauseTime = 0; /*Console.WriteLine("Pause timer reset");*/ }
 
             return bbox.Y;
         }
 
         // incorporate velocity tracking later
-        internal int TrackUpwards(Rectangle bbox)
+        internal void TrackUpwards(ref int prevY)
         {
             if (tempoSW.IsRunning && pauseSW.IsRunning)
             {
-                tempoTime = tempoSW.ElapsedMilliseconds; tempoSW.Stop();
-                pauseTime = pauseSW.ElapsedMilliseconds; pauseSW.Stop();
+                analytics.tempoTime = tempoSW.ElapsedMilliseconds; tempoSW.Stop();
+                analytics.pauseTime = pauseSW.ElapsedMilliseconds; pauseSW.Stop();
 
-                tempoTime = tempoTime - pauseTime;
+                analytics.tempoTime = analytics.tempoTime - analytics.pauseTime;
                 Console.WriteLine("TempoSW stopped.");
             }
 
-            if (currRep == nextRep) 
+            if (!goingUp) 
             {
-                Console.WriteLine($"Final Pause Time: {pauseTime}");
-                pauseTimes.Add(pauseTime);
-                tempoTimes.Add(tempoTime);
-                tempoTime = 0; pauseTime = 0;
+                Console.WriteLine($"Final Tempo Time: {analytics.tempoTime}");
+                Console.WriteLine($"Final Pause Time: {analytics.pauseTime}");
+                analytics.pauseTimes.Add(analytics.pauseTime);
+                analytics.tempoTimes.Add(analytics.tempoTime);
+                analytics.tempoTime = 0; analytics.pauseTime = 0;
 
-                nextRep += 1;
+                goingUp = true;
             }
-            return bbox.Y;
         }
     }
 }
